@@ -1,7 +1,5 @@
 node-lomod
 ==================
-**Local Modules Enhanced Require**
-
 Loading modules from not only 'node_modules' but also 'lib' folders, which usually contains project's local modules.
 
 Demo Usage
@@ -18,7 +16,7 @@ project/
      |  + app-util.js
      + submod/
      |  + lib/
-     |  |  + libdir
+     |  |  + libdir/
      |  |  |  + dir-util.js
      |  |  + sub-util.js
      |  + test.js

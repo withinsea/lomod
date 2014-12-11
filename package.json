@@ -1,13 +1,11 @@
 {
   "name": "lomod",
-  "title": "Local Modules Enhanced Require",
-  "description": "Loading modules from not only 'node_modules' but also 'lib' folders, which usually contains project's local modules.",
-  "version": "0.1.0",
+  "description": "Local Modules Enhanced Require",
+  "version": "0.1.2",
   "keywords": [
-    "NodeJS",
-    "Modules Loading System",
-    "Local Module",
-    "Require"
+    "nodejs",
+    "modules",
+    "require"
   ],
   "author": {
     "name": "Mo Chen",
