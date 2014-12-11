@@ -1,7 +1,24 @@
 'use strict';
 
 var path = require('path'),
-    fs = require('fs');
+    fs = require('fs'),
+    caller_dir = function () {
+        try {
+            var origPst = Error.prepareStackTrace,
+                pst = Error.prepareStackTrace = function (err, stack) {
+                    return stack;
+                },
+                stack = new Error().stack;
+            Error.prepareStackTrace = origPst;
+            while (stack.length && (stack[0].getFileName() === __filename)) {
+                stack.shift();
+            }
+            return stack.length ? path.dirname(stack[0].getFileName()) : __dirname;
+        } catch (err) {} finally {
+            Error.prepareStackTrace = origPst;
+        }
+        return __dirname;
+    };
 
 var lomod_dir = 'lib',
     lomod_package = 'package',
@@ -34,7 +51,7 @@ lomod.cacheLocal = {};
 lomod.cacheDeps = {};
 
 lomod.requireLocal = function (modpath) {
-    var dir = path.resolve('.'),
+    var dir = caller_dir(),
         ext = path.extname(modpath),
         base = path.normalize(modpath.substring(0, modpath.length - ext.length)),
         key = dir + '\n' + base + ext,
