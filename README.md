@@ -27,7 +27,7 @@ project/
 
 ### app/submod/test.js
 ```js 
-var lomod = equire('lomod');
+var lomod = require('lomod');
 
 // use as a replacement of original require
 var fs = lomod('fs');
