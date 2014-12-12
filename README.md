@@ -5,11 +5,11 @@ Loading modules from not only 'node_modules' but also 'lib' folders, which usual
 Demo Usage
 ------------------
 
-### demo project structure
+### project structure
 ```html
 project/
   + common/
-  |  + lib
+  |  + lib/
   |     + common-util.js
   + app/
      + lib/
@@ -56,7 +56,7 @@ If this failed, and the module identifier does not begin with '/', '../', or './
 
 If it is not found there, then it moves to the parent directory, and so on, until the root of the tree is reached, or a package.json with property **localDependencies** was found (check the next chapter). 
 
-For example, if the file at '/home/ry/projects/foo.js' called require('bar.js'), then lomod would look in the following locations, in this order:
+For example, if the file at '/home/ry/projects/foo.js' called lomod('bar.js'), then lomod would look in the following locations, in this order:
 
     try to require('bar.js')
     /home/ry/projects/lib/bar.js
@@ -70,7 +70,7 @@ Local Dependencies
 ------------------
 A "localDependencies" property with string array value in **package.json** stop the recusive moving to parent directory. Instead of it, lomod start looking up from each path in this array.
 
-For example, if the file at '/home/ry/projects/foo.js' called require('bar.js'), and the file at '/home/ry/package.json' contains localDependencies  assigned <code>['/share', '/usr/share']</code>, then lomod would look in the following locations, in this order:
+For example, if the file at '/home/ry/projects/foo.js' called lomod('bar.js'), and the file at '/home/ry/package.json' contains localDependencies  assigned <code>['/share', '/usr/share']</code>, then lomod would look in the following locations, in this order:
 
     try to require('bar.js')
     /home/ry/projects/lib/bar.js
