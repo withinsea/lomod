@@ -1,7 +1,7 @@
 {
   "name": "lomod",
   "description": "Local Modules Enhanced Require",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "keywords": [
     "nodejs",
     "modules",
