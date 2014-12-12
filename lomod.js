@@ -3,12 +3,12 @@
 var path = require('path'),
     fs = require('fs'),
     caller_dir = function () {
+        var origPst = Error.prepareStackTrace;
         try {
-            var origPst = Error.prepareStackTrace,
-                pst = Error.prepareStackTrace = function (err, stack) {
-                    return stack;
-                },
-                stack = new Error().stack;
+            Error.prepareStackTrace = function (err, stack) {
+                return stack;
+            };
+            var stack = new Error().stack;
             Error.prepareStackTrace = origPst;
             while (stack.length && (stack[0].getFileName() === __filename)) {
                 stack.shift();
@@ -25,8 +25,9 @@ var lomod = module.exports = function (modpath) {
     if (typeof modpath !== 'string' || modpath.startsWith('.') || modpath.startsWith('/')) {
         return require(modpath);
     }
+    var abspath;
     try {
-        return require(modpath);
+        abspath = require.resolve(modpath);
     } catch (err) {
         var mod = lomod.requireLocal(modpath);
         if (mod) {
@@ -35,6 +36,7 @@ var lomod = module.exports = function (modpath) {
             throw err;
         }
     }
+    return abspath && require(abspath);
 };
 
 lomod.main = require.main;
@@ -55,6 +57,7 @@ lomod.requireLocal = function (modpath) {
         lomod.cacheLocal[key] = resolved;
         return require(resolved);
     }
+    return null;
 };
 
 var _opts = {
