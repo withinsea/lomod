@@ -1,4 +1,4 @@
-node-lomod
+lomod
 ==================
 Loading modules from not only 'node_modules' but also 'lib' folders, which usually contains project's local modules.
 
@@ -28,7 +28,7 @@ Usage
          + package.json
 
 
-** app/submod/test.js **
+**app/submod/test.js**
 
 ```js 
 var lomod = require('lomod');
@@ -42,7 +42,7 @@ var autil = lomod('app-util');
 var cutil = lomod('common-util');
 ```
 
-** app/package.json **
+**app/package.json**
 
 ```js
 {
@@ -103,20 +103,21 @@ Any format supported by original require will be inherited to lomod.
       |  + lores.yaml
       + test.js
 
-** test.js **
+**test.js**
 ```js
 require('require-yaml');
 
 var res = require('res');
-var lores = lomod('lores')
+var lomod = require('lomod'),
+    lores = lomod('lores');
 ```
 
-### some format modules
+### some format modules by [olalonde](https://www.npmjs.com/~olalonde)
 
 > <span class="icon icon-alert"></span> These modules support extra formats by adding handlers to [require.extensions](http://nodejs.org/api/all.html#all_require_extensions) which is a **deprecated** feature in node's module system. Since the module system is locked, this feature will probably never go away but may have subtle bugs. Use on your own risk.
 
 - [better-require](https://www.npmjs.com/package/better-require) (a multiple formats bundle)
-- [require-yaml](https://github.com/olalonde/require-yaml)
-- [require-csv](https://github.com/olalonde/require-csv)
-- [require-xml](https://github.com/olalonde/require-xml)
-- [require-ini](https://github.com/olalonde/require-ini)
+- [require-yaml](https://www.npmjs.com/package/require-yaml)
+- [require-csv](https://www.npmjs.com/package/require-csv)
+- [require-xml](https://www.npmjs.com/package/require-xml)
+- [require-ini](https://www.npmjs.com/package/require-ini)
