@@ -1,7 +1,7 @@
 {
   "name": "lomod",
   "description": "Local Module Enhanced Require",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "keywords": [
     "nodejs",
     "module",
@@ -18,10 +18,10 @@
   "homepage": "https://www.npmjs.com/package/lomod",
   "repository": {
     "type": "git",
-    "url": "https://github.com/withinsea/node-lomod.git"
+    "url": "https://github.com/withinsea/lomod.git"
   },
   "bugs": {
-    "url": "https://github.com/withinsea/node-lomod/issues"
+    "url": "https://github.com/withinsea/lomod/issues"
   },
   "main": "lomod.js",
   "engines": {
