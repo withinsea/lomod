@@ -43,7 +43,9 @@ lomod.main = require.main;
 lomod.cache = require.cache;
 lomod.resolve = require.resolve.bind(require);
 lomod.extensions = require.extensions;
-lomod.registerExtension = require.registerExtension.bind(require);
+if (typeof require.registerExtension === 'function') {
+  lomod.registerExtension = require.registerExtension.bind(require);
+}
 
 lomod.cacheLocal = {};
 lomod.cacheDeps = {};
