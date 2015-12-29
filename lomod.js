@@ -3,8 +3,6 @@ var fs = require('fs');
 
 // Util
 
-var __callerdir = _callerdir();
-
 function _callerdir() {
   var stack;
   var origPst = Error.prepareStackTrace;
@@ -64,11 +62,12 @@ Lomod.prototype.resolveLocal = function (modpath) {
   if (/^(\/|\\|\w+\:)/.test(modpath)) {
     return require.resolve(modpath);
   }
-  var key = __callerdir + '\n' + modpath;
+  var dir = _callerdir();
+  var key = dir + '\n' + modpath;
   var resolved = this.cacheLocal[key];
   if (!resolved) {
     for (var i=0, len = this.lodirs.length; i<len; i++) {
-      resolved = _resolveLocal(__callerdir, path.join(this.lodirs[i], modpath), Object.keys(require.extensions), {});
+      resolved = _resolveLocal(dir, path.join(this.lodirs[i], modpath), Object.keys(require.extensions), {});
       if (resolved) {
         this.cacheLocal[key] = resolved;
         break;
@@ -87,7 +86,8 @@ function _normalize(modpath) {
   }
   modpath = path.normalize(modpath);
   if (/^\./.test(modpath)) {
-    modpath = path.resolve(__callerdir, modpath);
+    var dir = _callerdir();
+    modpath = path.resolve(dir, modpath);
   }
   return modpath;
 }
@@ -162,3 +162,4 @@ function _get(lodirs) {
   }
   return fn;
 }
+
