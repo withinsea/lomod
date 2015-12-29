@@ -1,7 +1,7 @@
 {
   "name": "lomod",
-  "description": "Local Module Enhanced Require",
-  "version": "0.1.9",
+  "description": "Local Module Require",
+  "version": "1.0.0",
   "keywords": [
     "nodejs",
     "module",
@@ -11,10 +11,7 @@
     "name": "Mo Chen",
     "email": "withinsea@gmail.com"
   },
-  "license": {
-    "type": "MIT",
-    "url": "http://opensource.org/licenses/mit-license.php"
-  },
+  "license": "MIT",
   "homepage": "https://www.npmjs.com/package/lomod",
   "repository": {
     "type": "git",
@@ -26,6 +23,5 @@
   "main": "lomod.js",
   "engines": {
     "node": ">= 0.10.0"
-  },
-  "dependencies": {}
+  }
 }

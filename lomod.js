@@ -1,113 +1,148 @@
-'use strict';
+var path = require('path');
+var fs = require('fs');
 
-var path = require('path'),
-    fs = require('fs'),
-    caller_dir = function () {
-        var origPst = Error.prepareStackTrace;
-        try {
-            Error.prepareStackTrace = function (err, stack) {
-                return stack;
-            };
-            var stack = new Error().stack;
-            Error.prepareStackTrace = origPst;
-            while (stack.length && (stack[0].getFileName() === __filename)) {
-                stack.shift();
-            }
-            return stack.length ? path.dirname(stack[0].getFileName()) : __dirname;
-        } catch (err) {} finally {
-            Error.prepareStackTrace = origPst;
-        }
-        return __dirname;
-    };
+// Util
 
-
-var lomod = module.exports = function (modpath) {
-    if (typeof modpath !== 'string' || modpath.startsWith('.') || modpath.startsWith('/')) {
-        return require(modpath);
-    }
-    var abspath;
-    try {
-        abspath = require.resolve(modpath);
-    } catch (err) {
-        var mod = lomod.requireLocal(modpath);
-        if (mod) {
-            return mod;
-        } else {
-            throw err;
-        }
-    }
-    return abspath && require(abspath);
+function _callerdir() {
+  var stack;
+  var origPst = Error.prepareStackTrace;
+  try {
+    Error.prepareStackTrace = function (err, stack) { return stack; };
+    stack = new Error().stack;
+  } finally {
+    Error.prepareStackTrace = origPst;
+  }
+  while (stack && stack.length && (stack[0].getFileName() === __filename)) {
+    stack.shift();
+  }
+  return stack && stack.length && path.dirname(stack[0].getFileName()) || __dirname;
 };
 
-lomod.main = require.main;
-lomod.cache = require.cache;
-lomod.resolve = require.resolve.bind(require);
-lomod.extensions = require.extensions;
-if (typeof require.registerExtension === 'function') {
-  lomod.registerExtension = require.registerExtension.bind(require);
-}
+function _delegate(target, src) {
+  for (var k in src) {
+    var v = src[k];
+    target[k] = (typeof v === 'function') ? v.bind(src) : v
+  }
+  return target;
+};
 
-lomod.cacheLocal = {};
-lomod.cacheDeps = {};
+// Feature
 
-lomod.requireLocal = function (modpath) {
-    modpath = path.normalize(modpath);
-    var dir = caller_dir(),
-        key = dir + '\n' + modpath,
-        resolved = lomod.cacheLocal[key] || lomod.resolveLocal(dir, modpath, {});
-    if (resolved) {
-        lomod.cacheLocal[key] = resolved;
-        return require(resolved);
+var Lomod = function (lodirs) {
+  this.lodirs = lodirs;
+  this.cacheLocal = {};
+};
+
+Lomod.prototype.require = function (modpath) {
+  if (typeof modpath !== 'string' || /^(\.|\/|\\|\w+\:)/.test(modpath)) {
+    return require(modpath);
+  }
+  var abspath;
+  try {
+    abspath = require.resolve(modpath);
+  } catch (err) {
+    var mod = this.requireLocal(modpath);
+    if (mod) {
+      return mod;
+    } else {
+      throw err;
+    }
+  }
+  return abspath && require(abspath);
+};
+
+Lomod.prototype.requireLocal = function (modpath) {
+  var resolved = this.resolveLocal(modpath);
+  return resolved && require(resolved) || null;
+};
+
+Lomod.prototype.resolveLocal = function (modpath) {
+  modpath = path.normalize(modpath);
+  var resolved;
+  var dir = _callerdir();
+  if (dir && modpath) {
+    var key = dir + '\n' + modpath;
+    resolved = this.cacheLocal[key];
+    if (!resolved) {
+      for (var i=0, len = this.lodirs.length; i<len; i++) {
+        resolved = _resolveLocal(dir, path.join(this.lodirs[i], modpath), Object.keys(require.extensions), {});
+        if (resolved) {
+          this.cacheLocal[key] = resolved;
+          break;
+        }
+      }
+    }
+  }
+  if (!resolved) {
+    throw new Error("Cannot find local module '" + modpath + "'");
+  }
+  return resolved;
+};
+
+function _resolveLocal(dir, lopath, extnames, scaned) {
+  dir = path.normalize(dir);
+  if (scaned[dir] || !fs.existsSync(dir)) {
+    return null;
+  }
+  scaned[dir] = true;
+  var resolved = _resolveFile(dir, lopath, [''])
+    || _resolveFile(dir, lopath, extnames)
+    || _resolveFile(dir, lopath, [''], true);
+  if (resolved) {
+    return resolved;
+  }
+  var lodeps;
+  try {
+    lodeps = require(path.resolve(dir, 'package'))['localDependencies']
+  } catch (err) {}
+  if (lodeps) {
+    for (var i = 0, len = lodeps.length; i < len; i += 1) {
+      var depdir = /^(\/|\\|\w+\:)/.test(lodeps[i]) ? lodeps[i] : path.resolve(dir, lodeps[i]);
+      resolved = _resolveLocal(depdir, lopath, extnames, scaned);
+      if (resolved) {
+        return resolved;
+      }
     }
     return null;
+  }
+  var pdir = path.resolve(dir, '..');
+  return (pdir && (pdir !== dir)) ? _resolveLocal(pdir, lopath, extnames, scaned) : null;
 };
 
-var _opts = {
-    lib: 'lib',
-    pack: 'package.json',
-    lodeps: 'localDependencies'
-};
-
-lomod.resolveLocal = function (dir, modpath) {
-    return _resolveLocal(dir, modpath, Object.keys(lomod.extensions), {}, _opts);
-};
-
-function _resolveLocal(dir, modpath, all_extnames, scaned_dirs, opts) {
-    if (!dir || !modpath || scaned_dirs[dir] || !fs.existsSync(dir)) {
-        return null;
+function _resolveFile(dir, lopath, extnames, is_dir) {
+  for (var i = 0, len = extnames.length; i < len; i += 1) {
+    var found = path.resolve(dir, lopath + extnames[i]);
+    if (fs.existsSync(found) && fs.statSync(found)[is_dir ? 'isDirectory' : 'isFile']()) {
+      return found;
     }
-    scaned_dirs[dir] = true;
-    var find = function (basepath, extnames, is_dir) {
-        for (var i = 0, len = extnames.length; i < len; i += 1) {
-            var found = path.resolve(dir, basepath + extnames[i]);
-            if (fs.existsSync(found) && fs.statSync(found)[is_dir ? 'isDirectory' : 'isFile']()) {
-                return found;
-            }
-        }
+  }
+};
+
+// Export
+
+var lomod = module.exports = _get();
+lomod.in = _get;
+
+var _getCache;
+function _get(lodirs) {
+  if (typeof lodirs === 'string') {
+    lodirs = Array.prototype.slice.apply(arguments);
+  }
+  lodirs = lodirs || [ 'local_modules', 'lib' ]
+  var normlodirs = [];
+  for (var i=0; i<lodirs.length; i++) {
+    normlodirs.push(lodirs[i].toString().trim());
+  }
+  _getCache = _getCache || {};
+  var key = normlodirs.join('|');
+  var fn = _getCache[key];
+  if (!fn) {
+    obj = new Lomod(normlodirs);
+    fn = _getCache[key] = function () {
+      return obj.require.apply(obj, arguments);
     };
-    var basepath = path.join(opts.lib, modpath),
-        resolved = find(basepath, [''], false) || find(basepath, all_extnames, false) || find(basepath, [''], true);
-    if (resolved) {
-        return resolved;
-    }
-    var lodeps = lomod.cacheDeps[dir];
-    if (!lodeps) {
-        var pack = path.resolve(dir, opts.pack);
-        lodeps = fs.existsSync(pack) && (require(pack) || {})[opts.lodeps];
-    }
-    if (lodeps) {
-        lomod.cacheDeps[dir] = lodeps;
-        for (var i = 0, len = lodeps.length; i < len; i += 1) {
-            var depdir = lodeps[i].startsWith('/') ?
-                path.resolve(lodeps[i]) :
-                path.resolve(dir, lodeps[i]);
-            resolved = lomod.resolveLocal(depdir, modpath, all_extnames, scaned_dirs);
-            if (resolved) {
-                return resolved;
-            }
-        }
-        return null;
-    }
-    var pdir = path.resolve(dir, '..');
-    return (pdir && (pdir !== dir)) ? lomod.resolveLocal(pdir, modpath, all_extnames, scaned_dirs) : null;
+    _delegate(fn, obj);
+    _delegate(fn, require);
+  }
+  return fn;
 };

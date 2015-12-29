@@ -14,13 +14,13 @@ Usage
 
     project/
       + common/
-      |  + lib/
+      |  + local_modules/
       |     + common-util.js
       + app/
-         + lib/
+         + local_modules/
          |  + app-util.js
          + submod/
-         |  + lib/
+         |  + local_modules/
          |  |  + libdir/
          |  |  |  + dir-util.js
          |  |  + sub-util.js
@@ -30,14 +30,14 @@ Usage
 
 **app/submod/test.js**
 
-```js 
+```js
 var lomod = require('lomod');
 
 // use as a replacement of original require
 var fs = lomod('fs');
 
-var sutil = lomod('sub-util');        
-var dutil = lomod('libdir/dir-util');        
+var sutil = lomod('sub-util');
+var dutil = lomod('libdir/dir-util');
 var autil = lomod('app-util');
 var cutil = lomod('common-util');
 ```
@@ -57,21 +57,44 @@ var cutil = lomod('common-util');
 
 Looking-up Modules
 ------------------
-Any module identifier passed to lomod() will be tried on original require first. 
+Any module identifier passed to lomod() will be tried on original require first.
 
-If this failed, and the module identifier does not begin with '/', '../', or './', then lomod starts at the current directory, adds **/lib**, and attempts to load the module from that location.
+If this failed, and the module identifier does not begin with '/', '../', or './', then lomod starts at the current directory, adds **/LOCAL_MODULE_DIRNAME**, and attempts to load the module from that location. (LOCAL_MODULE_DIRNAME could be 'local_modules' or 'lib' for default)
 
-If it is not found there, then it moves to the parent directory, and so on, until the root of the tree is reached, or a package.json with property **localDependencies** was found (check the next chapter). 
+If it is not found there, then it moves to the parent directory, and so on, until the root of the tree is reached, or a package.json with property **localDependencies** was found (check the next chapter).
 
 For example, if the file at '/home/ry/projects/foo.js' called lomod('bar.js'), then lomod would look in the following locations, in this order:
 
     try to require('bar.js')
+    /home/ry/projects/local_modules/bar.js
+    /home/ry/local_modules/bar.js
+    /home/local_modules/bar.js
+    /local_modules/bar.js
     /home/ry/projects/lib/bar.js
     /home/ry/lib/bar.js
     /home/lib/bar.js
     /lib/bar.js
 
-This is almost same with the original require, just consider it as you got another group of module directories named 'lib'.
+This is almost same with the original require, just consider it as you got two extra module directories beside 'node_modules'.
+
+
+Local Module Dirs
+-----------------
+Lomod find local modules in directories named 'local_modules' or 'lib' by default. You can customize these names if they didn't fit your need:
+
+    var lomod = require('lomod').in('lib', 'mylib')
+
+Then lomod will find local modules in directories named 'lib' or 'mylib', the default directories 'local_modules' will be ignored.
+
+You can also use empty string as dirname:
+
+    var lomod = require('lomod').in('')
+    var tools = lomod('local_modules/tools')
+
+is equals to:
+
+    var lomod = require('lomod').in('local_modules')
+    var tools = lomod('tools')
 
 
 Local Dependencies
@@ -81,13 +104,15 @@ A "localDependencies" property with string array value in **package.json** stop 
 For example, if the file at '/home/ry/projects/foo.js' called lomod('bar.js'), and the file at '/home/ry/package.json' contains localDependencies  assigned <code>['/share', '/usr/share']</code>, then lomod would look in the following locations, in this order:
 
     try to require('bar.js')
-    /home/ry/projects/lib/bar.js
-    /home/ry/lib/bar.js    (stop moving to parent, go to localDependencies) 
-    /share/lib/bar.js
-    /lib/bar.js
-    /usr/share/lib/bar.js
-    /usr/lib/bar.js
-    /lib/bar.js            (has been scaned, ignore)
+    /home/ry/projects/local_modules/bar.js
+    /home/ry/local_modules/bar.js    (go to localDependencies)
+    /share/local_modules/bar.js
+    /local_modules/bar.js
+    /usr/share/local_modules/bar.js
+    /usr/local_modules/bar.js
+    /local_modules/bar.js            (has been scaned, ignore)
+    /home/ry/projects/lib/bar.js     (continue with local module dir "lib")
+    ....
 
 Lomod ignored '/home/lib/bar.js' in this example. You can simply prevent it by append '..' to the localDependencies array.
 
