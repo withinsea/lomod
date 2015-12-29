@@ -3,6 +3,8 @@ var fs = require('fs');
 
 // Util
 
+var __callerdir = _callerdir();
+
 function _callerdir() {
   var stack;
   var origPst = Error.prepareStackTrace;
@@ -16,7 +18,7 @@ function _callerdir() {
     stack.shift();
   }
   return stack && stack.length && path.dirname(stack[0].getFileName()) || __dirname;
-};
+}
 
 function _delegate(target, src) {
   for (var k in src) {
@@ -24,7 +26,7 @@ function _delegate(target, src) {
     target[k] = (typeof v === 'function') ? v.bind(src) : v
   }
   return target;
-};
+}
 
 // Feature
 
@@ -34,7 +36,8 @@ var Lomod = function (lodirs) {
 };
 
 Lomod.prototype.require = function (modpath) {
-  if (typeof modpath !== 'string' || /^(\.|\/|\\|\w+\:)/.test(modpath)) {
+  modpath = _normalize(modpath);
+  if (/^(\/|\\|\w+\:)/.test(modpath)) {
     return require(modpath);
   }
   var abspath;
@@ -57,19 +60,18 @@ Lomod.prototype.requireLocal = function (modpath) {
 };
 
 Lomod.prototype.resolveLocal = function (modpath) {
-  modpath = path.normalize(modpath);
-  var resolved;
-  var dir = _callerdir();
-  if (dir && modpath) {
-    var key = dir + '\n' + modpath;
-    resolved = this.cacheLocal[key];
-    if (!resolved) {
-      for (var i=0, len = this.lodirs.length; i<len; i++) {
-        resolved = _resolveLocal(dir, path.join(this.lodirs[i], modpath), Object.keys(require.extensions), {});
-        if (resolved) {
-          this.cacheLocal[key] = resolved;
-          break;
-        }
+  modpath = _normalize(modpath);
+  if (/^(\/|\\|\w+\:)/.test(modpath)) {
+    return require.resolve(modpath);
+  }
+  var key = __callerdir + '\n' + modpath;
+  var resolved = this.cacheLocal[key];
+  if (!resolved) {
+    for (var i=0, len = this.lodirs.length; i<len; i++) {
+      resolved = _resolveLocal(__callerdir, path.join(this.lodirs[i], modpath), Object.keys(require.extensions), {});
+      if (resolved) {
+        this.cacheLocal[key] = resolved;
+        break;
       }
     }
   }
@@ -78,6 +80,17 @@ Lomod.prototype.resolveLocal = function (modpath) {
   }
   return resolved;
 };
+
+function _normalize(modpath) {
+  if (typeof modpath !== 'string') {
+    require(modpath);
+  }
+  modpath = path.normalize(modpath);
+  if (/^\./.test(modpath)) {
+    modpath = path.resolve(__callerdir, modpath);
+  }
+  return modpath;
+}
 
 function _resolveLocal(dir, lopath, extnames, scaned) {
   dir = path.normalize(dir);
@@ -93,7 +106,10 @@ function _resolveLocal(dir, lopath, extnames, scaned) {
   }
   var lodeps;
   try {
-    lodeps = require(path.resolve(dir, 'package'))['localDependencies']
+    lodeps = require(path.resolve(dir, 'package'))['localDependencies'];
+    if (typeof lodeps === 'string') {
+      lodeps = [lodeps];
+    }
   } catch (err) {}
   if (lodeps) {
     for (var i = 0, len = lodeps.length; i < len; i += 1) {
@@ -107,7 +123,7 @@ function _resolveLocal(dir, lopath, extnames, scaned) {
   }
   var pdir = path.resolve(dir, '..');
   return (pdir && (pdir !== dir)) ? _resolveLocal(pdir, lopath, extnames, scaned) : null;
-};
+}
 
 function _resolveFile(dir, lopath, extnames, is_dir) {
   for (var i = 0, len = extnames.length; i < len; i += 1) {
@@ -116,7 +132,7 @@ function _resolveFile(dir, lopath, extnames, is_dir) {
       return found;
     }
   }
-};
+}
 
 // Export
 
@@ -137,7 +153,7 @@ function _get(lodirs) {
   var key = normlodirs.join('|');
   var fn = _getCache[key];
   if (!fn) {
-    obj = new Lomod(normlodirs);
+    var obj = new Lomod(normlodirs);
     fn = _getCache[key] = function () {
       return obj.require.apply(obj, arguments);
     };
@@ -145,4 +161,4 @@ function _get(lodirs) {
     _delegate(fn, require);
   }
   return fn;
-};
+}
