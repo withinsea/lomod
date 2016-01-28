@@ -1,7 +1,7 @@
 {
   "name": "lomod",
   "description": "Local Module Require",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "keywords": [
     "nodejs",
     "module",
@@ -20,7 +20,7 @@
   "bugs": {
     "url": "https://github.com/withinsea/lomod/issues"
   },
-  "main": "lomod.js",
+  "main": "lib/lomod.js",
   "engines": {
     "node": ">= 0.10.0"
   }

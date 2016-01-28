@@ -117,6 +117,34 @@ For example, if the file at '/home/ry/projects/foo.js' called lomod('bar.js'), a
 Lomod ignored '/home/lib/bar.js' in this example. You can simply prevent it by append '..' to the localDependencies array.
 
 
+Ignore Original Require
+------------------------
+
+Lomod will try to load module by original require first.
+You can ignore this by use `lomod.requireLocal` and `lomod.resolveLocal`
+
+    project/
+      + local_modules/
+      |  + util.js
+      + main.js
+
+**main.js**
+
+```js
+var sys_util = require('util');
+var my_util  = lomod.requireLocal('util');
+var my_util2 = require(lomod.resolveLocal('util'));
+```
+
+You can also specify a starting directory.
+Original require will also be ignored in this situation:
+
+```js
+var util = lomod('util', '/opt/my_lib/');
+// will be found in /opt/my_lib/local_modules/util
+```
+
+
 Support Other File Formats
 --------------------------
 Any format supported by original require will be inherited to lomod.
@@ -124,7 +152,7 @@ Any format supported by original require will be inherited to lomod.
     project/
       + node_modules/
       |  + res.yaml
-      + lib/
+      + local_modules/
       |  + lores.yaml
       + test.js
 
